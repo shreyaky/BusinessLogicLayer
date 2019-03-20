@@ -44,7 +44,7 @@ namespace BusinessLogicLayer
 
 
         [WebMethod]
-        public string GetLastLocation(String RFID)
+        public XmlDocument GetLastLocation(String RFID)
         {
 
             var Url = @"http://localhost:52663/api/PassengerAreaAccesses/LastAccess/" + RFID.ToString();
@@ -53,22 +53,45 @@ namespace BusinessLogicLayer
             HttpWebRequest ServiceRequest = (HttpWebRequest)WebRequest.Create(serviceURL);
             ServiceRequest.Method = "Get";
             HttpWebResponse serviceResponse;
+            XmlDocument dom = new XmlDocument();
+            XmlElement responseTag = dom.CreateElement("Response");
+            dom.AppendChild(responseTag);
             try
             {
                 //receive the http response.
                 serviceResponse = (HttpWebResponse)ServiceRequest.GetResponse();
             }
-            catch
+            catch (System.Net.WebException e)
             {
-                return "No Success Response Received (Not Found)";
+                XmlElement errorTag = dom.CreateElement("ErrorMessage");
+                responseTag.AppendChild(errorTag);
+                XmlText errorTagText = dom.CreateTextNode(e.Message);
+                errorTag.AppendChild(errorTagText);
+                XmlElement errorElem = dom.DocumentElement;
+                return dom;
 
             }
 
-            var ZoneId = serviceResponse.GetResponseHeader("ZoneId");
-            var RFID_Id = serviceResponse.GetResponseHeader("RFID");
-            var DateTime = serviceResponse.GetResponseHeader("LastAccessTime");
+            //var ZoneId = serviceResponse.GetResponseHeader("ZoneId");
+            //var RFID_Id = serviceResponse.GetResponseHeader("RFID");
+            //var DateTime = serviceResponse.GetResponseHeader("LastAccessTime");
 
-            return "ZoneId: " + ZoneId + ", RFID : " + RFID + ", LastAccess : " + DateTime;
+            XmlElement zoneIdTag = dom.CreateElement("ZoneID");
+            responseTag.AppendChild(zoneIdTag);
+            XmlText zoneIdTagText = dom.CreateTextNode(serviceResponse.GetResponseHeader("ZoneId"));
+            zoneIdTag.AppendChild(zoneIdTagText);
+
+            XmlElement RFIDTag = dom.CreateElement("RFID");
+            responseTag.AppendChild(RFIDTag);
+            XmlText RFIDTagText = dom.CreateTextNode(serviceResponse.GetResponseHeader("RFID"));
+            RFIDTag.AppendChild(RFIDTagText);
+
+            XmlElement AccessTimeTag = dom.CreateElement("AccessTime");
+            responseTag.AppendChild(AccessTimeTag);
+            XmlText AccessTimeTagText = dom.CreateTextNode(serviceResponse.GetResponseHeader("LastAccessTime"));
+            AccessTimeTag.AppendChild(AccessTimeTagText);
+
+            return dom;
         }
 
 
@@ -218,7 +241,7 @@ namespace BusinessLogicLayer
 
 
         [WebMethod]
-        public  String GetFlightDetails(string rfid)
+        public string GetFlightDetails(string rfid)
         {
             var uri = "http://localhost:52663/GetFlightDetails/" + rfid;
             HttpWebRequest serviceRequest = (HttpWebRequest)WebRequest.Create(uri);
@@ -308,7 +331,7 @@ namespace BusinessLogicLayer
                 catch (Exception ex)
 
                 {
-                    return "some error" + ex.Message;
+                    return "Error was encountered. " + ex.Message;
                     //Console.WriteLine("The email was not sent.");
                     //Console.WriteLine("Error message: " + ex.Message);
                 }
@@ -316,15 +339,46 @@ namespace BusinessLogicLayer
             }
 
 
-            return "email was sent";
+            return "Your Luggage has been updated to the specified zone. Please check your EMAIL!";
 
 
 
 
         }
 
+        /*
+      
+        [WebMethod]
+        public string GetPlacesToVisit(string pass_rfid)
+        {
+            var uri = "http://localhost:52663/UpdateLuggageLocation/" + pass_rfid ;
+            HttpWebRequest serviceRequest = (HttpWebRequest)WebRequest.Create(uri);
+            serviceRequest.Method = "GET";
+            HttpWebResponse serviceResponse;
+            try
+            {
+                //receive the http response.
+                serviceResponse = (HttpWebResponse)serviceRequest.GetResponse();
+            }
+            catch
+            {
+                return "No Success Response Received";
+            }
+            if (serviceResponse.StatusCode != HttpStatusCode.OK)
+            {
+                return "Bad request, something is wrong in the luggage tag update";
+            }
 
 
+            string email = serviceResponse.GetResponseHeader("PassengerEmail").ToString();
+            string stage = serviceResponse.GetResponseHeader("LuggageStatus").ToString();
+
+            string answer = sendEmail(email, stage);
+            //string answer = "Email ID: "+ serviceResponse.GetResponseHeader("PassengerEmail").ToString();
+
+            return answer;
+        }
+        */
 
 
 
